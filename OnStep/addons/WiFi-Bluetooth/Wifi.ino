@@ -11,7 +11,7 @@ const char html_wifiSSID1[] =
 "<br/><b>Station mode (connect to an Access-Point):</b><br/>"
 "<form method='post' action='/wifi.htm'>"
 "SSID: <input style='width:6em' name='stssid' type='text' value='%s' maxlength='32'>&nbsp;&nbsp;&nbsp;"
-"Password: <input style='width:8em' name='stpwd' type='password' value='%s' maxlength='39'> (8 char min.)<br/>";
+"Password: <input style='width:8em' name='stpwd' type='password' value='%s' maxlength='39'><br/>";
 const char html_wifiSSID2[] =
 "Enable DHCP: <input type='checkbox' name='stadhcp' value='1' %s> (Note: above addresses are ignored if DHCP is enabled)<br/>"
 "Enable Station Mode: <input type='checkbox' name='staen' value='1' %s><br/>"
@@ -43,7 +43,7 @@ const char html_wifiSSID3[] =
 "<br/><b>Access-Point mode:</b><br/>"
 "<form method='post' action='/wifi.htm'>"
 "SSID: <input style='width:6em' name='apssid' type='text' value='%s' maxlength='32'>&nbsp;&nbsp;&nbsp;"
-"Password: <input style='width:8em' name='appwd' type='password' value='%s' maxlength='39'> (8 char min.)&nbsp;&nbsp;&nbsp;"
+"Password: <input style='width:8em' name='appwd' type='password' value='%s' maxlength='39'>&nbsp;&nbsp;&nbsp;"
 "Channel: <input style='width:2em' name='apch' value='%d' type='number' min='1' max='11'><br/>";
 
 const char html_wifiApMAC[] = 
@@ -69,7 +69,7 @@ const char html_wifiSSID6[] =
 "<input name='apsn4' value='%d' type='number' min='0' max='255'></td></tr></table>";
 
 const char html_wifiSSID7[] =
-"Enable Access-Point Mode: <input type='checkbox' name='apen' value='1' %s> (Note: auto-enabled if Station Mode fails to connect)<br/>"
+"Enable Access-Point Mode: <input type='checkbox' name='apen' value='1' %s><br/>"
 "<button type='submit'>Upload</button></form><br />\r\n";
 
 const char html_logout[] = 
@@ -96,7 +96,7 @@ const char html_login[] =
 "Setup:<br/><br/>"
 "Enable either station <b>OR</b> AP mode, both enabled can cause performance issues.&nbsp;&nbsp;"
 "However, if just setting up or testing it can be desirable to enable both modes temporarily to guard against being locked out.<br/>"
-"If locked out of the ESP8266, a Sketch uploaded to the MCU (Teensy3.x, STM32, Mega2560, etc.) which sends an 'R' at 9600 baud on the serial interface "
+"If locked out of the ESP8266, a Sketch uploaded to the MCU (Teensy3.2, Launchpad, etc.) which sends an 'R' at 9600 baud on the serial interface "
 "in reply to any '#' received will cause a reset to AP only enabled and the default SSID/Password.<br/><br/>"
 "\r\n";
 
@@ -105,14 +105,11 @@ bool loginRequired=true;
 
 void handleWifi() {
   Ser.setTimeout(WebTimeout);
-  serialRecvFlush();
   
   char temp[320]="";
   char temp1[80]="";
   
   processWifiGet();
-
-  sendHtmlStart();
 
   // send a standard http response header
   String data=html_headB;
@@ -122,14 +119,13 @@ void handleWifi() {
   data += html_main_css3;
   data += html_main_css4;
   data += html_main_css5;
-  sendHtml(data);
   data += html_main_css6;
   data += html_main_css7;
   data += html_main_css8;
   data += html_main_cssE;
   data += html_headE;
+
   data += html_bodyB;
-  sendHtml(data);
 
   mountStatus.update(true);
 
@@ -142,61 +138,65 @@ void handleWifi() {
   data += html_links1N;
   data += html_links2N;
   data += html_links3N;
-  sendHtml(data);
-#ifdef ENCODERS_ON
-  data += html_linksEncN;
-#endif
   data += html_links4N;
   data += html_links5N;
   data += html_links6S;
   data += html_onstep_header4;
-  sendHtml(data);
 
   data+="<div style='width: 40em;'>";
 
   if (restartRequired) {
-    restartRequired=false;
     data+=html_reboot;
-  } else
-  if (loginRequired) {
+    data+="</div></div></body></html>";
+    server.send(200, "text/html",data);
     restartRequired=false;
-    data+=html_login;
-  } else {
-    EEPROM_readString(100,wifi_sta_ssid);
-    EEPROM_readString(150,wifi_sta_pwd);
-      
-    sprintf(temp,html_wifiSerial,CmdTimeout,WebTimeout); data += temp;
-    sprintf(temp,html_wifiSSID1,wifi_sta_ssid,""); data += temp;
-    
-    uint8_t mac[6] = {0,0,0,0,0,0}; WiFi.macAddress(mac);
-    char wifi_sta_mac[80]="";
-    for (int i=0; i<6; i++) { sprintf(wifi_sta_mac,"%s%02x:",wifi_sta_mac,mac[i]); } wifi_sta_mac[strlen(wifi_sta_mac)-1]=0;
-    sprintf(temp,html_wifiMAC,wifi_sta_mac); data += temp;
-  
-    sprintf(temp,html_wifiSTAIP,wifi_sta_ip[0],wifi_sta_ip[1],wifi_sta_ip[2],wifi_sta_ip[3]); data += temp;
-    sprintf(temp,html_wifiSTAGW,wifi_sta_gw[0],wifi_sta_gw[1],wifi_sta_gw[2],wifi_sta_gw[3]); data += temp;
-    sprintf(temp,html_wifiSTASN,wifi_sta_sn[0],wifi_sta_sn[1],wifi_sta_sn[2],wifi_sta_sn[3]); data += temp;
-    sprintf(temp,html_wifiSSID2,stationDhcpEnabled?"checked":"",stationEnabled?"checked":""); data += temp;
-    sprintf(temp,html_wifiSSID3,wifi_ap_ssid,"",wifi_ap_ch); data += temp;
-    sendHtml(data);
-  
-    uint8_t macap[6] = {0,0,0,0,0,0}; WiFi.softAPmacAddress(macap);
-    char wifi_ap_mac[80]="";
-    for (int i=0; i<6; i++) { sprintf(wifi_ap_mac,"%s%02x:",wifi_ap_mac,macap[i]); } wifi_ap_mac[strlen(wifi_ap_mac)-1]=0;
-    sprintf(temp,html_wifiApMAC,wifi_ap_mac); data += temp;
-    
-    sprintf(temp,html_wifiSSID4,wifi_ap_ip[0],wifi_ap_ip[1],wifi_ap_ip[2],wifi_ap_ip[3]); data += temp;
-    sprintf(temp,html_wifiSSID5,wifi_ap_gw[0],wifi_ap_gw[1],wifi_ap_gw[2],wifi_ap_gw[3]); data += temp;
-    sprintf(temp,html_wifiSSID6,wifi_ap_sn[0],wifi_ap_sn[1],wifi_ap_sn[2],wifi_ap_sn[3]); data += temp;
-    sprintf(temp,html_wifiSSID7,accessPointEnabled?"checked":""); data += temp;
-    data += html_logout;
+    delay(1000);
+//    ESP.restart();
+    return;
   }
+
+  if (loginRequired) {
+    data+=html_login;
+    data+="</div></div></body></html>";
+    server.send(200, "text/html",data);
+    restartRequired=false;
+    delay(1000);
+  //  ESP.restart();
+    return;
+  }
+
+  EEPROM_readString(100,wifi_sta_ssid);
+  EEPROM_readString(150,wifi_sta_pwd);
+    
+  sprintf(temp,html_wifiSerial,CmdTimeout,WebTimeout); data += temp;
+  sprintf(temp,html_wifiSSID1,wifi_sta_ssid,""); data += temp;
   
+  uint8_t mac[6] = {0,0,0,0,0,0}; WiFi.macAddress(mac);
+  char wifi_sta_mac[80]="";
+  for (int i=0; i<6; i++) { sprintf(wifi_sta_mac,"%s%02x:",wifi_sta_mac,mac[i]); } wifi_sta_mac[strlen(wifi_sta_mac)-1]=0;
+  sprintf(temp,html_wifiMAC,wifi_sta_mac); data += temp;
+
+  sprintf(temp,html_wifiSTAIP,wifi_sta_ip[0],wifi_sta_ip[1],wifi_sta_ip[2],wifi_sta_ip[3]); data += temp;
+  sprintf(temp,html_wifiSTAGW,wifi_sta_gw[0],wifi_sta_gw[1],wifi_sta_gw[2],wifi_sta_gw[3]); data += temp;
+  sprintf(temp,html_wifiSTASN,wifi_sta_sn[0],wifi_sta_sn[1],wifi_sta_sn[2],wifi_sta_sn[3]); data += temp;
+  sprintf(temp,html_wifiSSID2,stationDhcpEnabled?"checked":"",stationEnabled?"checked":""); data += temp;
+  sprintf(temp,html_wifiSSID3,wifi_ap_ssid,"",wifi_ap_ch); data += temp;
+
+  uint8_t macap[6] = {0,0,0,0,0,0}; WiFi.softAPmacAddress(macap);
+  char wifi_ap_mac[80]="";
+  for (int i=0; i<6; i++) { sprintf(wifi_ap_mac,"%s%02x:",wifi_ap_mac,macap[i]); } wifi_ap_mac[strlen(wifi_ap_mac)-1]=0;
+  sprintf(temp,html_wifiApMAC,wifi_ap_mac); data += temp;
+  
+  sprintf(temp,html_wifiSSID4,wifi_ap_ip[0],wifi_ap_ip[1],wifi_ap_ip[2],wifi_ap_ip[3]); data += temp;
+  sprintf(temp,html_wifiSSID5,wifi_ap_gw[0],wifi_ap_gw[1],wifi_ap_gw[2],wifi_ap_gw[3]); data += temp;
+  sprintf(temp,html_wifiSSID6,wifi_ap_sn[0],wifi_ap_sn[1],wifi_ap_sn[2],wifi_ap_sn[3]); data += temp;
+  sprintf(temp,html_wifiSSID7,accessPointEnabled?"checked":""); data += temp;
+  data += html_logout;
+
   strcpy(temp,"</div></div></body></html>");
   data += temp;
 
-  sendHtml(data);
-  sendHtmlDone(data);
+  server.send(200, "text/html",data);
 }
 
 void processWifiGet() {
@@ -249,13 +249,9 @@ void processWifiGet() {
         // digits all in 0..9,A..F and validate
         v.toUpperCase();
         uint8_t mac[6];
-        int imac[6];
-        imac[0]=hexToInt(v.substring(0,2)); imac[1]=hexToInt(v.substring(3,2)); imac[2]=hexToInt(v.substring(6,2));
-        imac[3]=hexToInt(v.substring(9,2)); imac[4]=hexToInt(v.substring(12,2)); imac[5]=hexToInt(v.substring(15,2));
-        if ((imac[0]>=0) && (imac[1]>=0) && (imac[2]>=0) && (imac[3]>=0) && (imac[4]>=0) && (imac[5]>=0)) {
-          mac[0]=imac[0]; mac[1]=imac[1]; mac[2]=imac[2]; mac[3]=imac[3]; mac[4]=imac[4]; mac[5]=imac[5]; 
-          WiFi.macAddress(mac); restartRequired=true; 
-        }
+        mac[0]=hexToInt(v.substring(0,2)); mac[1]=hexToInt(v.substring(3,2)); mac[2]=hexToInt(v.substring(6,2));
+        mac[3]=hexToInt(v.substring(9,2)); mac[4]=hexToInt(v.substring(12,2)); mac[5]=hexToInt(v.substring(15,2));
+        if ((mac[0]>=0) && (mac[1]>=0) && (mac[2]>=0) && (mac[3]>=0) && (mac[4]>=0) && (mac[5]>=0)) { WiFi.macAddress(mac); restartRequired=true; }
       }
     }
   }
@@ -336,13 +332,9 @@ void processWifiGet() {
         // digits all in 0..9,A..F and validate
         v.toUpperCase();
         uint8_t mac[6];
-        int imac[6];
-        imac[0]=hexToInt(v.substring(0,2)); imac[1]=hexToInt(v.substring(3,2)); imac[2]=hexToInt(v.substring(6,2));
-        imac[3]=hexToInt(v.substring(9,2)); imac[4]=hexToInt(v.substring(12,2)); imac[5]=hexToInt(v.substring(15,2));
-        if ((imac[0]>=0) && (imac[1]>=0) && (imac[2]>=0) && (imac[3]>=0) && (imac[4]>=0) && (imac[5]>=0)) {
-          mac[0]=imac[0]; mac[1]=imac[1]; mac[2]=imac[2]; mac[3]=imac[3]; mac[4]=imac[4]; mac[5]=imac[5];
-          WiFi.softAPmacAddress(mac); restartRequired=true; 
-        }
+        mac[0]=hexToInt(v.substring(0,2)); mac[1]=hexToInt(v.substring(3,2)); mac[2]=hexToInt(v.substring(6,2));
+        mac[3]=hexToInt(v.substring(9,2)); mac[4]=hexToInt(v.substring(12,2)); mac[5]=hexToInt(v.substring(15,2));
+        if ((mac[0]>=0) && (mac[1]>=0) && (mac[2]>=0) && (mac[3]>=0) && (mac[4]>=0) && (mac[5]>=0)) { WiFi.softAPmacAddress(mac); restartRequired=true; }
       }
     }
   }
@@ -429,3 +421,4 @@ int hexToInt(String s) {
     return i0*16+i1;
   } else return -1;
 }
+

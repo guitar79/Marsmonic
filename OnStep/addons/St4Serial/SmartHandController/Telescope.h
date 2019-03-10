@@ -7,7 +7,7 @@ class Telescope
 public:
   enum Errors { ERR_NONE, ERR_MOTOR_FAULT, ERR_ALT, ERR_LIMIT_SENSE, ERR_DEC, ERR_AZM, ERR_UNDER_POLE, ERR_MERIDIAN, ERR_SYNC };
 
-  enum AlignMode { ALIM_OFF, ALIM_ONE, ALIM_TWO, ALIM_THREE, ALIM_FOUR, ALIM_FIVE, ALIM_SIX, ALIM_SEVEN, ALIM_EIGHT, ALIM_NINE };
+  enum AlignMode { ALIM_OFF, ALIM_ONE, ALIM_TWO, ALIM_THREE, ALIM_FOUR, ALIM_SIX };
   enum AlignState {
     ALI_OFF,
     ALI_SELECT_STAR_1, ALI_SLEW_STAR_1, ALI_RECENTER_1,
@@ -15,10 +15,7 @@ public:
     ALI_SELECT_STAR_3, ALI_SLEW_STAR_3, ALI_RECENTER_3,
     ALI_SELECT_STAR_4, ALI_SLEW_STAR_4, ALI_RECENTER_4,
     ALI_SELECT_STAR_5, ALI_SLEW_STAR_5, ALI_RECENTER_5,
-    ALI_SELECT_STAR_6, ALI_SLEW_STAR_6, ALI_RECENTER_6,
-    ALI_SELECT_STAR_7, ALI_SLEW_STAR_7, ALI_RECENTER_7,
-    ALI_SELECT_STAR_8, ALI_SLEW_STAR_8, ALI_RECENTER_8,
-    ALI_SELECT_STAR_9, ALI_SLEW_STAR_9, ALI_RECENTER_9
+    ALI_SELECT_STAR_6, ALI_SLEW_STAR_6, ALI_RECENTER_6
   };
   enum Mount { GEM, FEM };
   enum TrackState { TRK_OFF, TRK_ON, TRK_SLEWING, TRK_UNKNOW };
@@ -39,8 +36,8 @@ public:
   char TempAz[20];
   char TempAlt[20];
   unsigned long lastStateAzAlt;
-  char TempLocalTime[20];
-  char TempSidereal[20];
+  char TempUTC[20];
+  char TempSideral[20];
   unsigned long lastStateTime;
   char TelStatus[20];
   char sideofpier[20];
@@ -53,7 +50,7 @@ public:
   bool hasInfoAz = false;
   bool hasInfoAlt = false;
   bool hasInfoUTC = false;
-  bool hasInfoSidereal = false;
+  bool hasInfoSideral = false;
   bool hasPierInfo = false;
   bool hasTelStatus = false;
   unsigned long lastState;
@@ -67,12 +64,8 @@ public:
   ParkState getParkState();
   TrackState getTrackingState();
   bool atHome();
-  bool isPecPlaying();
-  bool isPecRecording();
-  bool isPecWaiting();
   bool isGuiding();
   bool isMountGEM();
-  bool isMountAltAz();
   PierState getPierState();
   Errors getError();
   bool addStar();

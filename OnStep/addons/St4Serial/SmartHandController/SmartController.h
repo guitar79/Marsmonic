@@ -8,16 +8,6 @@
 #define SH1106 0
 #define SSD1306 1
 
-// Single byte guide commands
-#define ccMe 14
-#define ccMw 15
-#define ccMn 16
-#define ccMs 17
-#define ccQe 18
-#define ccQw 19
-#define ccQn 20
-#define ccQs 21
-
 class SmartHandController
 {
 public:
@@ -65,14 +55,12 @@ private:
 
   void menuMain();
   void menuSpeedRate();
+  void menuTrack();
   void menuSyncGoto(bool sync);
   void menuSolarSys(bool sync);
   void menuHerschel(bool sync);
   void menuMessier(bool sync);
   void menuAlignment();
-  void menuParking();
-  void menuPEC();
-  void menuGotoSpeed();
   void menuPier();
   void menuStar(bool sync);
   bool SelectStarAlign();
@@ -85,17 +73,12 @@ private:
   void menuMotor(uint8_t idx);
   void menuSite();
   void menuSites();
-  void menuLocalDateTime();
+  void menuUTCTime();
   void menuDisplay();
-  void menuSound();
-  void menuMeridianFlips();
-  void menuTracking();
   void menuContrast();
-  void menuDimTimeout();
-  void menuBlankTimeout();
+  void menuDate();
   void menuLatitude();
   void menuLongitude();
-  void menuZone();
   void menuLimits();
   void menuWifi();
   void menuHorizon();
@@ -105,7 +88,6 @@ private:
 
   bool menuSetStepperGearBox(uint8_t &axis, unsigned short &worm);
   bool menuSetReverse(uint8_t &axis);
-  void menuBacklash();
   bool menuSetBacklash(uint8_t &axis);
   bool menuSetTotGear(uint8_t &axis);
   bool menuSetStepPerRot(uint8_t &axis);
@@ -119,3 +101,4 @@ private:
   bool DisplayMessageLX200(LX200RETURN val, bool silentOk = true);
 };
 extern SmartHandController HdCrtlr;
+

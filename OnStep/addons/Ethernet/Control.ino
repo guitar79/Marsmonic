@@ -51,7 +51,7 @@ const char html_controlScript1[] =
 "<script>\n"
 "function s(key,v1) {\n"
   "var xhttp = new XMLHttpRequest();\n"
-  "xhttp.open('GET', 'controlA.txt?'+key+'='+v1+'&x='+new Date().getTime(), true);\n"
+  "xhttp.open('GET', 'guide.txt?'+key+'='+v1+'&x='+new Date().getTime(), true);\n"
   "xhttp.send();\n"
 "}\n"
 "function g(v1){s('dr',v1);}\n"
@@ -278,8 +278,6 @@ void handleControl() {
   char temp1[24]="";
 
   processControlGet();
-
-  sendHtmlStart();
   
   String data=html_headB;
   data += html_main_cssB;
@@ -289,7 +287,6 @@ void handleControl() {
   data += html_main_css4;
   data += html_main_css5;
   data += html_main_css6;
-  sendHtml(data);
   data += html_main_css7;
   data += html_main_css8;
   data += html_main_css_control1;
@@ -297,8 +294,11 @@ void handleControl() {
   data += html_main_css_control3;
   data += html_main_cssE;
   data += html_headE;
+#ifdef OETHS
+  client->print(data); data="";
+#endif
+
   data += html_bodyB;
-  sendHtml(data);
 
   // get status
   mountStatus.update();
@@ -312,17 +312,15 @@ void handleControl() {
   data += html_links1N;
   data += html_links2S;
   data += html_links3N;
-#ifdef ENCODERS_ON
-  data += html_linksEncN;
-#endif
-  sendHtml(data);
   data += html_links4N;
   data += html_links5N;
 #ifndef OETHS
   data += html_links6N;
 #endif
   data += html_onstep_header4;
-  sendHtml(data);
+#ifdef OETHS
+  client->print(data); data="";
+#endif
 
   // guide (etc) script
   data += html_controlScript1;
@@ -334,7 +332,9 @@ void handleControl() {
   // active ajax page is: controlAjax();
   data +="<script>var ajaxPage='control.txt';</script>\n";
   data +=html_ajax_active;
-  sendHtml(data);
+#ifdef OETHS
+  client->print(data); data="";
+#endif
 
   // Quick controls ------------------------------------------
   data += html_controlQuick1;
@@ -343,26 +343,32 @@ void handleControl() {
   data += html_controlQuick3;
   data += html_controlQuick4;
   data += html_controlQuick5;
-  sendHtml(data);
+#ifdef OETHS
+  client->print(data); data="";
+#endif
 
   // Tracking control ----------------------------------------
   data += html_controlTrack1;
   data += html_controlTrack2;
   data += html_controlTrack3;
-  sendHtml(data);
+#ifdef OETHS
+  client->print(data); data="";
+#endif
 
   // Get the align mode --------------------------------------
   data += html_controlAlign1;
-  byte sc[3];
-  int n=1;
-  if (mountStatus.alignMaxStars()<3) { n=1; sc[0]=1; } else
-  if (mountStatus.alignMaxStars()<4) { n=3; sc[0]=1; sc[1]=2; sc[2]=3; } else
-  if (mountStatus.alignMaxStars()<6) { n=3; sc[0]=1; sc[1]=3; sc[2]=4; } else
-  if (mountStatus.alignMaxStars()<8) { n=3; sc[0]=1; sc[1]=3; sc[2]=6; } else
-                                     { n=3; sc[0]=1; sc[1]=3; sc[2]=9; }
-  for (int i=0; i<n; i++) { char temp2[120]=""; sprintf(temp2,html_controlAlign2,sc[i],sc[i],SIDEREAL_CH); data+=temp2; }
+  if (mountStatus.alignMaxStars()<=3) {
+    for (int i=1; i<=mountStatus.alignMaxStars(); i++) { char temp2[120]=""; sprintf(temp2,html_controlAlign2,i,i,SIDEREAL_CH); data+=temp2; }
+  } else {
+    char temp2[120]="";
+    sprintf(temp2,html_controlAlign2,1,1,SIDEREAL_CH); data+=temp2;
+    sprintf(temp2,html_controlAlign2,4,4,SIDEREAL_CH); data+=temp2;
+    sprintf(temp2,html_controlAlign2,6,6,SIDEREAL_CH); data+=temp2;
+  }
   data += html_controlAlign3;
-  sendHtml(data);
+#ifdef OETHS
+  client->print(data); data="";
+#endif
   
   // Tracking ------------------------------------------------
   data += html_controlTrack4;
@@ -372,11 +378,12 @@ void handleControl() {
   data += html_controlGuide2;
   data += html_controlGuide3;
   data += html_controlGuide4;
-  sendHtml(data);
   data += html_controlGuide5;
   data += html_controlGuide6;
   data += html_controlGuide7;
-  sendHtml(data);
+#ifdef OETHS
+  client->print(data); data="";
+#endif
 
   // Focusing ------------------------------------------------
   boolean Focuser1; if (sendCommand(":FA#",temp1,R_BOOL)) Focuser1=true; else Focuser1=false;
@@ -389,7 +396,9 @@ void handleControl() {
     data += html_controlFocus4;
     data += html_controlFocus5;
     data += html_controlFocus6;
-  sendHtml(data);
+#ifdef OETHS
+    client->print(data); data="";
+#endif
   }
 
   // Rotate/De-Rotate ----------------------------------------
@@ -412,8 +421,10 @@ void handleControl() {
   }
   if (Rotate) {
     data += html_controlRotate4;
+#ifdef OETHS
+    client->print(data); data="";
+#endif
   }
-  sendHtml(data);
 
   // Aux -----------------------------------------------------
   #if defined(SW0) || defined(SW1) || defined(SW2) || defined(SW3) || defined(SW4) || defined(SW5) || defined(SW6) || defined(SW7) || defined(SW8) || defined(SW9) || defined(SW10) || defined(SW11) || defined(SW12) || defined(SW13) || defined(SW14) || defined(SW15) || defined(AN3) || defined(AN4) || defined(AN5) || defined(AN6) || defined(AN7) || defined(AN8)
@@ -469,7 +480,10 @@ void handleControl() {
     data += html_controlSwitch15; c++;
     #endif
     if (c>0) data+="<br />";
-    sendHtml(data);
+
+#ifdef OETHS
+    client->print(data); data="";
+#endif
 
     // Analog Control
     #ifdef AN3
@@ -490,7 +504,6 @@ void handleControl() {
     #ifdef AN8
     if (sendCommand(":GXG8#",temp1)) { data += html_controlAnalog8A; data += temp1; data += html_controlAnalog8B; data += temp1; data += html_controlAnalog8C; }
     #endif
-    sendHtml(data);
 
     data += html_controlAuxE;
   #endif
@@ -499,14 +512,17 @@ void handleControl() {
   
   data += "</div></body></html>";
 
-  sendHtml(data);
-  sendHtmlDone(data);
+#ifdef OETHS
+  client->print(data);
+#else
+  server.send(200, "text/html",data);
+#endif
 }
 
 #ifdef OETHS
-void controlAjaxGet(EthernetClient *client) {
+void guideAjax(EthernetClient *client) {
 #else
-void controlAjaxGet() {
+void guideAjax() {
 #endif
   processControlGet();
 #ifdef OETHS
@@ -522,7 +538,7 @@ void controlAjax(EthernetClient *client) {
 void controlAjax() {
 #endif
   String data="";
-  char temp[80]="";
+  char temp[40]="";
 
   data += "focuserpos|";
   if (sendCommand(":FG#",temp)) { data += temp; data += " microns\n"; } else { data += "?\n"; }
@@ -597,7 +613,7 @@ void processControlGet() {
     if (v=="9") Ser.print(":A9#");
     if (v=="n") Ser.print(":A+#");
     if (v=="q") Ser.print(":Q#");
-    Ser.setTimeout(1000);
+    Ser.setTimeout(WebTimeout*4);
 
     // clear any possible response
     temp[Ser.readBytesUntil('#',temp,20)]=0;
@@ -781,3 +797,4 @@ void cl() {
   Ser.setTimeout(WebTimeout*8);
   temp[Ser.readBytesUntil('#',temp,20)]=0;
 }
+

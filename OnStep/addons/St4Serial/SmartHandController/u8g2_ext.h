@@ -1,5 +1,5 @@
 #pragma once
-#include <U8g2lib.h> // https://github.com/olikraus/u8g2/
+#include <U8g2lib.h>
 #include "Catalog.h"
 #include "u8g2_ext_event.h"
 
@@ -11,8 +11,6 @@ public:
   uint8_t UserInterfaceMessage(Pad *extPad, const char *title1, const char *title2, const char *title3, const char *buttons);
 
   uint8_t UserInterfaceSelectionList(Pad *extPad, const char *title, uint8_t start_pos, const char *sl);
-
-  uint8_t UserInterfaceInputValueBoolean(Pad *extPad, const char *title, boolean *value);
 
   uint8_t UserInterfaceInputValueInteger(Pad *extPad, const char *title, const char *pre, uint8_t *value, uint8_t lo, uint8_t hi, uint8_t digits, const char *post);
 
@@ -31,7 +29,7 @@ public:
   uint8_t UserInterfaceInputValueDec(Pad *extPad, long *value);
 
 
-  uint8_t UserInterfaceInputValueTime(Pad *extPad, long *value);
+  uint8_t UserInterfaceInputValueUTCTime(Pad *extPad, long *value);
 
 
   uint8_t UserInterfaceInputValueLatitude(Pad *extPad, long *value);

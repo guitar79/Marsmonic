@@ -36,17 +36,11 @@
 #define FirmwareDate          __DATE__
 #define FirmwareTime          __TIME__
 #define FirmwareVersionMajor  "1"
-<<<<<<< HEAD
 #define FirmwareVersionMinor  "4"
 #define FirmwareVersionPatch  "h"
-=======
-#define FirmwareVersionMinor  "6"
-#define FirmwareVersionPatch  "c"
->>>>>>> f925469dacb28680e44cc4fa62fdacd839cbd63f
 
 #define Version FirmwareVersionMajor "." FirmwareVersionMinor FirmwareVersionPatch
 
-#include <limits.h>
 #include <ESP8266WiFi.h>
 #include <WiFiClient.h>
 #include <ESP8266WebServer.h>
@@ -56,23 +50,9 @@
 #include "Config.h"
 #include "Constants.h"
 #include "Encoders.h"
-#ifdef ENCODERS_ON
 Encoders encoders;
-#endif
 
 #include "MountStatus.h"
-
-#ifndef LEGACY_TRANSMIT_ON
-  // macros to help with sending webpage data, chunked
-  #define sendHtmlStart() server.setContentLength(CONTENT_LENGTH_UNKNOWN); server.sendHeader("Cache-Control","no-cache"); server.send(200, "text/html", String());
-  #define sendHtml(x) server.sendContent(x); x=""
-  #define sendHtmlDone(x) server.sendContent("");
-#else
-  // macros to help with sending webpage data, normal method
-  #define sendHtmlStart()
-  #define sendHtml(x)
-  #define sendHtmlDone(x) server.send(200, "text/html", x)
-#endif
 
 int WebTimeout=TIMEOUT_WEB;
 int CmdTimeout=TIMEOUT_CMD;
@@ -120,6 +100,7 @@ void handleNotFound(){
 }
 
 void setup(void){
+
 #ifdef LED_PIN
   pinMode(LED_PIN,OUTPUT);
 #endif
@@ -136,17 +117,6 @@ void setup(void){
 
     EEPROM_writeInt(10,(int)WebTimeout);
     EEPROM_writeInt(12,(int)CmdTimeout);
-
-#ifdef ENCODERS_ON
-    EEPROM_writeLong(600,Axis1EncDiffLimit);
-    EEPROM_writeLong(604,Axis2EncDiffLimit);
-    EEPROM_writeLong(608,20);  // enc short term average samples
-    EEPROM_writeLong(612,200); // enc long term average samples
-    EEPROM_writeLong(616,0);   // enc rate comp
-    EEPROM_writeLong(624,1);   // intpol phase
-    EEPROM_writeLong(628,0);   // intpol mag
-    EEPROM_writeLong(632,10);  // prop
-#endif
 
     EEPROM_writeString(100,wifi_sta_ssid);
     EEPROM_writeString(150,wifi_sta_pwd);
@@ -169,21 +139,6 @@ void setup(void){
 
     WebTimeout=EEPROM_readInt(10);
     CmdTimeout=EEPROM_readInt(12);
-
-#ifdef ENCODERS_ON
-    Axis1EncDiffLimit=EEPROM_readLong(600);
-    Axis2EncDiffLimit=EEPROM_readLong(604);
-#ifdef AXIS1_ENC_RATE_CONTROL_ON
-    Axis1EncStaSamples=EEPROM_readLong(608);
-    Axis1EncLtaSamples=EEPROM_readLong(612);
-    long l=EEPROM_readLong(616); Axis1EncRateComp=1.0+(float)l/1000000.0;
-#ifdef AXIS1_ENC_INTPOL_COS_ON
-    Axis1EncIntPolPhase =EEPROM_readLong(624);
-    Axis1EncIntPolMag   =EEPROM_readLong(628);
-#endif
-    Axis1EncProp        =EEPROM_readLong(632);
-#endif
-#endif
 
     EEPROM_readString(100,wifi_sta_ssid);
     EEPROM_readString(150,wifi_sta_pwd);
@@ -294,7 +249,6 @@ Again:
 
 #endif
 
-TryAgain:
   if ((stationEnabled) && (!stationDhcpEnabled)) WiFi.config(wifi_sta_ip, wifi_sta_gw, wifi_sta_sn);
   if (accessPointEnabled) WiFi.softAPConfig(wifi_ap_ip, wifi_ap_gw, wifi_ap_sn);
   
@@ -313,22 +267,18 @@ TryAgain:
     WiFi.mode(WIFI_AP_STA);
   }
 
-  // wait for connection in station mode, if it fails fall back to access-point mode
-  if (!accessPointEnabled && stationEnabled) {
-    for (int i=0; i<5; i++)
-      if (WiFi.status() != WL_CONNECTED) delay(1000); else break;
-    if (WiFi.status() != WL_CONNECTED) {
-      stationEnabled=false;
-      accessPointEnabled=true;
-      goto TryAgain;
-    }
-  }
-
   // clear the buffers and any noise on the serial lines
   for (int i=0; i<3; i++) {
     Ser.print(":#");
     delay(50);
     serialRecvFlush();
+  }
+
+  // Wait for connection
+  if (stationEnabled) {
+    while (WiFi.status() != WL_CONNECTED) {
+      delay(500);
+    }
   }
 
   server.on("/", handleRoot);
@@ -337,13 +287,8 @@ TryAgain:
   server.on("/settings.htm", handleSettings);
   server.on("/settings.txt", settingsAjax);
   server.on("/control.htm", handleControl);
-#ifdef ENCODERS_ON
-  server.on("/enc.htm", handleEncoders);
-  server.on("/encA.txt", encAjaxGet);
-  server.on("/enc.txt", encAjax);
-#endif
   server.on("/control.txt", controlAjax);
-  server.on("/controlA.txt", controlAjaxGet);
+  server.on("/guide.txt", guideAjax);
   server.on("/pec.htm", handlePec);
   server.on("/pec.txt", pecAjax);
   server.on("/wifi.htm", handleWifi);
@@ -358,16 +303,11 @@ TryAgain:
   Ser.println("HTTP server started");
 #endif
 
-#ifdef ENCODERS_ON
   encoders.init();
-#endif
 }
 
 void loop(void){
   server.handleClient();
-#ifdef ENCODERS_ON
-  encoders.poll();
-#endif
 
   // disconnect client
   static unsigned long clientTime = 0;
@@ -388,7 +328,6 @@ void loop(void){
 
     // get the data
     byte b=cmdSvrClient.read();
-
     writeBuffer[writeBufferPos]=b; writeBufferPos++; if (writeBufferPos>39) writeBufferPos=39; writeBuffer[writeBufferPos]=0;
 
     // send cmd and pickup the response
@@ -404,13 +343,10 @@ void loop(void){
         }
       }
 
-    } else {
-      server.handleClient(); 
-#ifdef ENCODERS_ON
-      encoders.poll();
-#endif
-    }
+    } else server.handleClient();
   }
+
+  encoders.poll();
 }
 
 const char* HighSpeedCommsStr(long baud) {
@@ -420,3 +356,4 @@ const char* HighSpeedCommsStr(long baud) {
   if (baud==28800) { return ":SB3#"; }
   if (baud==19200) { return ":SB4#"; } else { return ":SB5#"; }
 }
+

@@ -1,11 +1,10 @@
 // -------------------------------------------------------------------------------
 // Configuration
-// *** user configuration is in SHC_Config.h and TeenAstro_Config.h ***
 
 #pragma once
 
-#include "SHC_Config.h"
-#include "TeenAstro_Config.h"
+#include "ST4SmartConfig.h"
+#include "SerialSmartConfig.h"
 
 // Enable debugging messages on DebugSer
 #define DEBUG_OFF                 // default=_OFF, use "DEBUG_ON" to activate

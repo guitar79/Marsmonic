@@ -21,8 +21,8 @@ void Telescope::updateTime(boolean immediate)
 {
   if ((millis() - lastStateTime > BACKGROUND_CMD_RATE) && ((updateSeq%4==2) || (updateSeq%4==3) || immediate) && connected)
   {
-    if ((updateSeq%4==2) || immediate) { hasInfoUTC = GetLX200(":GL#", TempLocalTime) == LX200VALUEGET; if (!hasInfoUTC) connected = true; }
-    if ((updateSeq%4==3) || immediate) { hasInfoSidereal = GetLX200(":GS#", TempSidereal) == LX200VALUEGET; if (!hasInfoSidereal) connected = true; lastStateTime = millis(); }
+    if ((updateSeq%4==2) || immediate) { hasInfoUTC = GetLX200(":GL#", TempUTC) == LX200VALUEGET; if (!hasInfoUTC) connected = true; }
+    if ((updateSeq%4==3) || immediate) { hasInfoSideral = GetLX200(":GS#", TempSideral) == LX200VALUEGET; if (!hasInfoSideral) connected = true; lastStateTime = millis(); }
   }
 };
 void Telescope::updateTel(boolean immediate)
@@ -109,20 +109,6 @@ bool Telescope::atHome()
 {
   return strchr(&TelStatus[0], 'H') != NULL;
 }
-bool Telescope::isPecPlaying()
-{
-  // PEC Status is one of "/,~;^" for ignore, wait play, play, wait rec, rec
-  // "." is an index detect but isn't implemented yet
-  return strchr(&TelStatus[0], '~') != NULL;
-}
-bool Telescope::isPecRecording()
-{
-  return strchr(&TelStatus[0], '^') != NULL;
-}
-bool Telescope::isPecWaiting()
-{
-  return (strchr(&TelStatus[0], ',') != NULL) || (strchr(&TelStatus[0], ';') != NULL);
-}
 bool Telescope::isGuiding()
 {
   return  strchr(&TelStatus[0], 'G') != NULL;
@@ -130,10 +116,6 @@ bool Telescope::isGuiding()
 bool Telescope::isMountGEM()
 {
   return strchr(&TelStatus[0], 'E') != NULL;
-}
-bool Telescope::isMountAltAz()
-{
-  return strchr(&TelStatus[0], 'A') != NULL;
 }
 Telescope::PierState Telescope::getPierState()
 {
@@ -172,17 +154,13 @@ Telescope::Errors Telescope::getError()
 
 bool Telescope::addStar()
 {
-  if (align == ALI_RECENTER_1 || align == ALI_RECENTER_2 || align == ALI_RECENTER_3 || align == ALI_RECENTER_4 || align == ALI_RECENTER_5 || align == ALI_RECENTER_6 || align == ALI_RECENTER_7 || align == ALI_RECENTER_8 || align == ALI_RECENTER_9) {
+  if (align == ALI_RECENTER_1 || align == ALI_RECENTER_2 || align == ALI_RECENTER_3 || align == ALI_RECENTER_4 || align == ALI_RECENTER_5 || align == ALI_RECENTER_6) {
     if (SetLX200(":A+#") == LX200VALUESET) {
       if (aliMode == ALIM_ONE || 
-         (aliMode == ALIM_TWO   && align == ALI_RECENTER_2) ||
-         (aliMode == ALIM_THREE && align == ALI_RECENTER_3) ||
-         (aliMode == ALIM_FOUR  && align == ALI_RECENTER_4) ||
-         (aliMode == ALIM_FIVE  && align == ALI_RECENTER_5) ||
-         (aliMode == ALIM_SIX   && align == ALI_RECENTER_6) ||
-         (aliMode == ALIM_SEVEN && align == ALI_RECENTER_7) ||
-         (aliMode == ALIM_EIGHT && align == ALI_RECENTER_8) ||
-         (aliMode == ALIM_NINE  && align == ALI_RECENTER_9)) { align = ALI_OFF; return true; } else { align = static_cast<AlignState>(align+1); return true; }
+         (aliMode == ALIM_TWO   && align == ALI_RECENTER_2) || 
+         (aliMode == ALIM_THREE && align == ALI_RECENTER_3) || 
+         (aliMode == ALIM_FOUR  && align == ALI_RECENTER_4) || 
+         (aliMode == ALIM_SIX   && align == ALI_RECENTER_6)) { align = ALI_OFF; return true; } else { align = static_cast<AlignState>(align+1); return true; }
     } else {
       align = ALI_OFF;
       return false;

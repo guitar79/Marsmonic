@@ -62,7 +62,7 @@ const char html_configLongDeg[] =
 const char html_configLongMin[] = 
 " <input value='%s' type='number' name='g2' min='0' max='60'>&nbsp;'&nbsp;&nbsp;"
 "<button type='submit'>Upload</button>"
-" (Longitude, in deg. and min. +/- 180, W is +)"
+" (Longitude, in deg. and min. +/- 180)"
 "</form>"
 "\r\n";
 const char html_configLatDeg[] = 
@@ -71,7 +71,7 @@ const char html_configLatDeg[] =
 const char html_configLatMin[] = 
 " <input value='%s' type='number' name='t2' min='0' max='60'>&nbsp;'&nbsp;&nbsp;"
 "<button type='submit'>Upload</button>"
-" (Latitude, in deg. and min. +/- 90, N is +)"
+" (Latitude, in deg. and min. +/- 90)"
 "</form>"
 "\r\n";
 const char html_configOffsetDeg[] = 
@@ -98,8 +98,6 @@ void handleConfiguration() {
   
   processConfigurationGet();
 
-  sendHtmlStart();
-
   // send a standard http response header
   String data=html_headB;
   data += html_main_cssB;
@@ -107,15 +105,17 @@ void handleConfiguration() {
   data += html_main_css2;
   data += html_main_css3;
   data += html_main_css4;
-  sendHtml(data);
   data += html_main_css5;
   data += html_main_css6;
   data += html_main_css7;
   data += html_main_css8;
   data += html_main_cssE;
   data += html_headE;
+#ifdef OETHS
+  client->print(data); data="";
+#endif
+
   data += html_bodyB;
-  sendHtml(data);
 
   // get status
   mountStatus.update();
@@ -129,10 +129,6 @@ void handleConfiguration() {
   data += html_links1N;
   data += html_links2N;
   data += html_links3N;
-#ifdef ENCODERS_ON
-  data += html_linksEncN;
-#endif
-  sendHtml(data);
   data += html_links4N;
   data += html_links5S;
 #ifndef OETHS
@@ -145,7 +141,9 @@ void handleConfiguration() {
 
   // Slew speed
   data += html_configMaxRate;
-  sendHtml(data);
+#ifdef OETHS
+  client->print(data); data="";
+#endif
 
   // Backlash
   if (!sendCommand(":%BR#",temp1)) strcpy(temp1,"0"); int backlashAxis1=(int)strtol(&temp1[0],NULL,10);
@@ -154,7 +152,9 @@ void handleConfiguration() {
   if (!sendCommand(":%BD#",temp1)) strcpy(temp1,"0"); int backlashAxis2=(int)strtol(&temp1[0],NULL,10);
   sprintf(temp,html_configBlAxis2,backlashAxis2);
   data += temp;
-  sendHtml(data);
+#ifdef OETHS
+  client->print(data); data="";
+#endif
 
   // Overhead and Horizon Limits
   if (!sendCommand(":Gh#",temp1)) strcpy(temp1,"0"); int minAlt=(int)strtol(&temp1[0],NULL,10);
@@ -175,7 +175,9 @@ void handleConfiguration() {
     sprintf(temp,html_configPastMerW,degPastMerW);
     data += temp;
   } else data += "<br />\r\n";
-  sendHtml(data);
+#ifdef OETHS
+  client->print(data); data="";
+#endif
 
   // Longitude
   if (!sendCommand(":Gg#",temp1)) strcpy(temp1,"+000*00");
@@ -185,7 +187,9 @@ void handleConfiguration() {
   data += temp;
   sprintf(temp,html_configLongMin,(char*)&temp1[5]);
   data += temp;
-  sendHtml(data);
+#ifdef OETHS
+  client->print(data); data="";
+#endif
 
   // Latitude
   if (!sendCommand(":Gt#",temp1)) strcpy(temp1,"+00*00");
@@ -195,7 +199,9 @@ void handleConfiguration() {
   data += temp;
   sprintf(temp,html_configLatMin,(char*)&temp1[4]);
   data += temp;
-  sendHtml(data);
+#ifdef OETHS
+  client->print(data); data="";
+#endif
 
   // UTC Offset
   if (!sendCommand(":GG#",temp1)) strcpy(temp1,"+00");
@@ -209,13 +215,18 @@ void handleConfiguration() {
   if (temp2[4]=='3') sprintf(temp,html_configOffsetMin,"","selected",""); else
   if (temp2[4]=='4') sprintf(temp,html_configOffsetMin,"","","selected");
   data += temp;
-  sendHtml(data);
+#ifdef OETHS
+  client->print(data); data="";
+#endif
 
   strcpy(temp,"</div></div></body></html>");
   data += temp;
 
-  sendHtml(data);
-  sendHtmlDone(data);
+#ifdef OETHS
+  client->print(data); data="";
+#else
+  server.send(200, "text/html",data);
+#endif
 }
 
 void processConfigurationGet() {
@@ -330,3 +341,4 @@ void processConfigurationGet() {
   // clear any possible response
   temp[Ser.readBytesUntil('#',temp,20)]=0;
 }
+
